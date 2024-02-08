@@ -103,8 +103,8 @@ def plot_droughtmap(grid_lon, grid_lat, map_2d,
     if legend_ticklabels is not None:
         cbar.set_ticklabels(legend_ticklabels)
 
-    plt.savefig(figname, dpi='figure', format=None, metadata=None,
-                bbox_inches=None, pad_inches=0.1,
+    plt.savefig(figname, format=None, metadata=None,
+                bbox_inches=None, pad_inches=0.1, dpi=300,
                 facecolor='auto', edgecolor='auto',
                 backend=None, frameon=False)
     plt.show()
