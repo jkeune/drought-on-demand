@@ -12,6 +12,10 @@ from matplotlib.colors import BoundaryNorm
 from mpl_toolkits.basemap import Basemap
 #from mpl_toolkits.basemap import shiftgrid
 
+def hex2rgb(hexs):
+   return tuple(int(hexs[i:i+2], 16)/255 for i in (0, 2, 4))
+
+
 def plot_precip_timeseries(sdate, precip, title, ylabel='P [mm month-1]'):
     plt.figure(figsize=(12,4))
     plt.plot(sdate, precip)
