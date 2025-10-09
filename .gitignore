@@ -3,7 +3,9 @@ __pycache__/
 helpers/__pycache__/
 *.py[cod]
 *$py.class
-
+drought_stripes/spidi/*
+drought_stripes/data
+drought_stripes/figures
 # C extensions
 *.so
 
