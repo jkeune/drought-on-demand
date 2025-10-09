@@ -6,6 +6,12 @@ helpers/__pycache__/
 drought_stripes/spidi/*
 drought_stripes/data
 drought_stripes/figures
+masks/*nc
+masks/*grib
+masks/output
+figures/*
+regions/*
+csv/*
 # C extensions
 *.so
 
