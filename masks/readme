@@ -1,0 +1,3 @@
+wget http://climon.data.compute.cci2.ecmwf.int/samples/masks/swvl1_l5_mask_202408.grib
+
+# barren mask from iryna rozum / c3s

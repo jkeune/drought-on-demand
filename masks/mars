@@ -1,0 +1,11 @@
+retrieve,
+class=ea,
+dataset=era5,
+date=2024-01-01,
+expver=1,
+levtype=sfc,
+param=27.128/28.128/141.128/172.128,
+stream=oper,
+grid=0.25/0.25,
+type=an,
+target="output"
