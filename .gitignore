@@ -12,6 +12,8 @@ masks/output
 figures/*
 regions/*
 csv/*
+drought-watch-live/figures/
+drought-watch-live/master_token
 # C extensions
 *.so
 
