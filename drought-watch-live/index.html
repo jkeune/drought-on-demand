@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ERA5 Drought Watch</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      background-color: #f8f8f8;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2em;
+      margin-bottom: 30px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+
+    .tab-button {
+      padding: 10px 20px;
+      background-color: #ddd;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      font-size: 1em;
+      transition: background-color 0.2s;
+    }
+
+    .tab-button.active, .tab-button:hover {
+      background-color: #bbb;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    #figure-container {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      max-width: 1000px;
+      margin: 0 auto;
+      background-color: #fff;
+      border-radius: 5px;
+      overflow: hidden;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      transition: opacity 0.3s ease;
+    }
+
+    /* Spinner */
+    .spinner {
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #555;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      position: absolute;
+      z-index: 10;
+      display: none;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    #controls {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-weight: bold;
+      margin-right: 5px;
+    }
+
+    select {
+      padding: 5px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background-color: #fff;
+    }
+
+    #readme {
+      max-width: 900px;
+      margin: 0 auto;
+      background-color: #fff;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      line-height: 1.6;
+    }
+
+    #readme h2 {
+      margin-top: 20px;
+      color: #2c3e50;
+    }
+
+    footer {
+      text-align: center;
+      color: #666;
+      font-size: 0.9em;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>ERA5 Drought Watch</h1>
+
+  <div class="tabs">
+    <button class="tab-button active" data-tab="maps-tab">Maps</button>
+    <button class="tab-button" data-tab="timeseries-tab">Timeseries</button>
+    <button class="tab-button" data-tab="readme-tab">README</button>
+  </div>
+
+  <!-- MAPS TAB -->
+  <div class="tab-content active" id="maps-tab">
+    <div id="controls">
+      <label for="maps-region">Region:</label>
+      <select id="maps-region">
+        <option value="Global" selected>Global</option>
+        <option value="Europe">Europe</option>
+      </select>
+
+      <label for="maps-index">Index:</label>
+      <select id="maps-index">
+        <option value="SPI">SPI</option>
+        <option value="SPEI" selected>SPEI</option>
+      </select>
+
+      <label for="maps-window">Time window (months):</label>
+      <select id="maps-window">
+        <option value="1" selected>1</option>
+        <option value="3">3</option>
+        <option value="6">6</option>
+        <option value="12">12</option>
+        <option value="24">24</option>
+        <option value="36">36</option>
+        <option value="48">48</option>
+      </select>
+    </div>
+
+    <div id="figure-container">
+      <div class="spinner" id="map-spinner"></div>
+      <img id="figure-img" alt="Drought Map" />
+    </div>
+  </div>
+
+  <!-- TIMESERIES TAB -->
+  <div class="tab-content" id="timeseries-tab">
+    <div id="controls">
+      <label for="ts-region">Region:</label>
+      <select id="ts-region">
+        <option value="Global" selected>Global</option>
+        <option value="Europe">Europe</option>
+      </select>
+
+      <label for="ts-index">Index:</label>
+      <select id="ts-index">
+        <option value="SPI">SPI</option>
+        <option value="SPEI" selected>SPEI</option>
+      </select>
+
+      <label for="ts-window">Time window (months):</label>
+      <select id="ts-window">
+        <option value="1" selected>1</option>
+        <option value="3">3</option>
+        <option value="6">6</option>
+        <option value="12">12</option>
+        <option value="24">24</option>
+        <option value="36">36</option>
+        <option value="48">48</option>
+      </select>
+    </div>
+
+    <div id="figure-container">
+      <div class="spinner" id="ts-spinner"></div>
+      <img id="ts-img" alt="Drought Timeseries" />
+    </div>
+  </div>
+
+  <!-- README TAB -->
+  <div class="tab-content" id="readme-tab">
+    <div id="readme">
+      <h2>About ERA5 DroughtWatch</h2>
+      <p><strong>DroughtWatch</strong> provides regularly updated visualizations of global and regional drought conditions.
+         It combines standardized drought indices with temporal summaries to track the evolution and intensity of drought conditions across time and space.</p>
+
+      <h2>Data Sources</h2>
+      <p>The underlying data are coming from Keune et al. (2025), published as <strong>ERA5-Drought</strong>. ERA5-Drought is based on meteorological reanalyses (ERA5, Hersbach et al., 2021) used to compute the 
+         <strong>Standardized Precipitation Index (SPI)</strong> and <strong>Standardized Precipitation Evapotranspiration Index (SPEI)</strong>.
+         These indices are widely used to assess meteorological drought conditions on multiple timescales.</p>
+
+      <h2>What the Maps Show</h2>
+      <p>Each map illustrates the current state of drought (or wetness) for the selected region and accumulation period. 
+         Negative values indicate dry conditions, while positive values represent wet anomalies. 
+         Longer time windows (e.g. 12–48 months) reflect more persistent droughts or pluvial periods.</p>
+
+      <h2>How to Use This Tool</h2>
+      <ul>
+        <li>Choose <strong>Maps</strong> to visualize spatial drought anomalies.</li>
+        <li>Choose <strong>Timeseries</strong> to view temporal drought evolution for a given region.</li>
+        <li>Use the dropdown menus to select the drought index, region, and accumulation period.</li>
+      </ul>
+
+      <h2>Contact</h2>
+      <p>For any questions please contact Jessica Keune.</p>
+
+      <h2>References</h2>
+      <p>Keune, J., Di Giuseppe, F., Barnard, C. et al. ERA5–Drought: Global drought indices based on ECMWF reanalysis. Sci Data 12, 616 (2025). https://doi.org/10.1038/s41597-025-04896-y</p>
+    </div>
+  </div>
+
+  <footer>
+    <p>© 2025 ERA5 DroughtWatch — Monitoring drought conditions worldwide</p>
+  </footer>
+
+  <script>
+    // Tab switching
+    const tabButtons = document.querySelectorAll(".tab-button");
+    const tabContents = document.querySelectorAll(".tab-content");
+
+    tabButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        tabButtons.forEach(b => b.classList.remove("active"));
+        tabContents.forEach(c => c.classList.remove("active"));
+        button.classList.add("active");
+        document.getElementById(button.dataset.tab).classList.add("active");
+      });
+    });
+
+    const figureImg = document.getElementById("figure-img");
+    const tsImg = document.getElementById("ts-img");
+    const mapSpinner = document.getElementById("map-spinner");
+    const tsSpinner = document.getElementById("ts-spinner");
+
+    function loadFigure(type) {
+      const prefix = type === "map" ? "maps" : "ts";
+      const region = document.getElementById(`${prefix}-region`).value;
+      const index = document.getElementById(`${prefix}-index`).value;
+      const windowValue = document.getElementById(`${prefix}-window`).value;
+      const filename = `${index}${windowValue}_${region}_${type}.png`;
+      const timestamp = Date.now();
+      const targetImg = type === "map" ? figureImg : tsImg;
+      const spinner = type === "map" ? mapSpinner : tsSpinner;
+
+      spinner.style.display = "block";
+      targetImg.style.opacity = "0";
+      targetImg.src = `figures/${filename}?t=${timestamp}`;
+      targetImg.onload = () => {
+        spinner.style.display = "none";
+        targetImg.style.opacity = "1";
+      };
+    }
+
+    ["maps", "ts"].forEach(prefix => {
+      document.getElementById(`${prefix}-region`).addEventListener("change", () => loadFigure(prefix === "maps" ? "map" : "timeseries"));
+      document.getElementById(`${prefix}-index`).addEventListener("change", () => loadFigure(prefix === "maps" ? "map" : "timeseries"));
+      document.getElementById(`${prefix}-window`).addEventListener("change", () => loadFigure(prefix === "maps" ? "map" : "timeseries"));
+    });
+
+    window.addEventListener("load", () => {
+      loadFigure("map");
+      loadFigure("timeseries");
+    });
+  </script>
+
+</body>
+</html>
+
