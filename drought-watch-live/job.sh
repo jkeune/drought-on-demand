@@ -8,7 +8,7 @@
 #SBATCH --ntasks=1
 ##SBATCH --mem=64G
 #SBATCH --mem=128G
-#SBATCH --time=24:00:00
+#SBATCH --time=03:00:00
 #SBATCH --mail-user=jessica.keune@ecmwf.int
 
 set -u # fail when using an undefined variable
@@ -20,7 +20,7 @@ module load cdo
 
 
 cd /home/nejk/code/drought-on-demand/drought-watch-live
-python3 update.py
+python3 update_timeseries.py
 
 
 exit
