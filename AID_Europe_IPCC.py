@@ -19,6 +19,27 @@ import cartopy
 import cartopy.feature as feature
 import cartopy.io.shapereader as shapereader
 
+# SETTINGS
+ref_syyyy = 1991
+ref_eyyyy = 2020
+yyyy_start= 2002
+yyyy_end  = 2026
+indicator = "SPEI"
+window    = int(sys.argv[1])
+yyyy      = 2025
+mm        = "09"
+minus     = 3 # in the last year, omit last <minus> entries
+stream    = "moda"
+dataset   = "era5t"
+distribut = "genlogistic"
+ipath     = f"/ec/ws4/tc/emos/work/cems/dryfall/emos/dryfall_monthly/ens/runs/"#%{yyyy}{mm}01/hr"
+lpath     = "/ec/vol/centaur/nejk/drought_monitor"
+cwd       = "/home/nejk/code/drought-on-demand"
+
+dates = pd.date_range(start=f"{yyyy_start}-01-01",end=f"{yyyy_end}-01-01", freq='ME')
+pdate_seq = [dt.datetime.strptime(str(i)[0:10], "%Y-%m-%d") for i in dates]#[window:]
+print(dates[:-minus])
+# !!!! ATTN, below we go to pdate_seq[:-minus] to exclude last 3 entries, but everything else is read from ERA5 or ERA5T if ERA5 not available
 
 EARTHRADIUS = 6371  # earth radius [km]
 def calculate_gridarea(lats_centr, res, nlon):
@@ -36,28 +57,6 @@ def calculate_gridarea(lats_centr, res, nlon):
     return area_2d
 
 
-ref_syyyy = 1991
-ref_eyyyy = 2020
-yyyy_start= 2005
-yyyy_end  = 2026
-indicator = "SPEI"
-window    = 12
-yyyy      = 2025
-mm        = "09"
-dataset   = "era5t"
-stream    = "moda"
-distribut = "genlogistic"
-# new versions
-ipath     = f"/ec/ws4/tc/emos/work/cems/dryfall/emos/dryfall_monthly/ens/runs/"#%{yyyy}{mm}01/hr"
-#ipath_era5t= f"/ec/ws4/tc/emos/work/cems/dryfall/emos/dryfall_monthly/ens/runs/"#{yyyy}{mm}01/hr"
-lpath     = "/ec/vol/centaur/nejk/drought_monitor"
-cwd       = "/home/nejk/code/drought-on-demand"
-
-dates = pd.date_range(start=f"{yyyy_start}-01-01",end=f"{yyyy_end}-01-01", freq='ME')
-pdate_seq = [dt.datetime.strptime(str(i)[0:10], "%Y-%m-%d") for i in dates]#[window:]
-print(dates)
-print(dates.size)
-# !!!! ATTN, below we go to pdate_seq[:-3] to exclude last 3 entries, but everything else is read from ERA5 or ERA5T if ERA5 not available
 
 # binary land mask
 lfile      = f"{lpath}/landmask_era5_global.nc"
@@ -108,7 +107,7 @@ emedmask_cut = emedmask.sel(lon=slice(lon1, lon2), lat=slice(lat2, lat1))
 
 filedate_seq = [dt.datetime.strftime(i, "%Y%m01") for i in pdate_seq[window:]]
 filelist = []
-for idate in filedate_seq[:-3]:
+for idate in filedate_seq[:-minus]:
     # /ec/ws4/tc/emos/work/cems/dryfall/emos/dryfall_monthly/ens/runs/
     ifile = f"{ipath}/era5/{idate}/hr/{indicator}{window}_{distribut}_global_era5_{stream}_ref{ref_syyyy}to{ref_eyyyy}_{str(idate)[:6]}.nc"
     if os.path.exists(ifile):
