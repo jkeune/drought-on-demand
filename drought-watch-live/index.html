@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ERA5 Drought Watch</title>
+  <title>DroughtWatch</title>
   <style>
     body {
       font-family: sans-serif;
@@ -131,7 +131,7 @@
 </head>
 <body>
 
-  <h1>ERA5 Drought Watch</h1>
+  <h1>DroughtWatch</h1>
 
   <div class="tabs">
     <button class="tab-button active" data-tab="maps-tab">Maps</button>
@@ -208,13 +208,12 @@
   <!-- README TAB -->
   <div class="tab-content" id="readme-tab">
     <div id="readme">
-      <h2>About ERA5 DroughtWatch</h2>
+      <h2>About DroughtWatch</h2>
       <p><strong>DroughtWatch</strong> provides regularly updated visualizations of global and regional drought conditions.
          It combines standardized drought indices with temporal summaries to track the evolution and intensity of drought conditions across time and space.</p>
 
       <h2>Data Sources</h2>
-      <p>The underlying data are coming from Keune et al. (2025), published as <strong>ERA5-Drought</strong>. ERA5-Drought is based on meteorological reanalyses (ERA5, Hersbach et al., 2021) used to compute the 
-         <strong>Standardized Precipitation Index (SPI)</strong> and <strong>Standardized Precipitation Evapotranspiration Index (SPEI)</strong>.
+      <p>The underlying data are coming from Keune et al. (2025), published as <strong>ERA5-Drought</strong>. ERA5-Drought is based on meteorological reanalyses (ERA5) used to compute the <strong>Standardized Precipitation Index (SPI)</strong> and <strong>Standardized Precipitation Evapotranspiration Index (SPEI)</strong>.
          These indices are widely used to assess meteorological drought conditions on multiple timescales.</p>
 
       <h2>What the Maps Show</h2>
@@ -229,16 +228,19 @@
         <li>Use the dropdown menus to select the drought index, region, and accumulation period.</li>
       </ul>
 
+      <h2>When to expect updates</h2>
+      <p>We only show the most recent monthly snapshots from ERA5-Drought. To ensure timeliness, we use the ERA5T release, and figures here are updated 1-2 days after the publication of the ERA5T moda stream. Updates are thus performed on the 7th of each month and show the drought anomaly of the previous month (or accumulated over the preceeding n months, always using ERA5 over ERA5T where possible).</p>
+
       <h2>Contact</h2>
       <p>For any questions please contact Jessica Keune.</p>
 
       <h2>References</h2>
-      <p>Keune, J., Di Giuseppe, F., Barnard, C. et al. ERA5–Drought: Global drought indices based on ECMWF reanalysis. Sci Data 12, 616 (2025). https://doi.org/10.1038/s41597-025-04896-y</p>
+      <p>Keune, J., Di Giuseppe, F., Barnard, C. et al. ERA5–Drought: Global drought indices based on ECMWF reanalysis. Scientific Data 12, 616 (2025). https://doi.org/10.1038/s41597-025-04896-y</p>
     </div>
   </div>
 
   <footer>
-    <p>© 2025 ERA5 DroughtWatch — Monitoring drought conditions worldwide</p>
+    <p>2025 DroughtWatch — Monitoring drought conditions worldwide using ERA5.</p>
   </footer>
 
   <script>
