@@ -74,7 +74,7 @@ bmask = xr.open_dataset(vfile)
 # use external shapefile to incl contended territories?
 shpfile = gpd.read_file("./regions/IPCC-WGI-reference-regions-v4.shp")
 print(shpfile.head())
-shpfile.plot()
+#shpfile.plot()
 shpfile=shpfile.to_crs('epsg:4326')
 extent = (shpfile[shpfile["Name"] == "Mediterranean"]).bounds
 lon1   = extent.minx.values[0]
@@ -84,34 +84,27 @@ lat2   = extent.maxy.values[0]
 
 
 ### MEDITERRANEAN
-# from Joey: the "Name" you want is "Mediterranean" and then we have subregions within that WMED (3.5 > lon), CMED (3.5 < lon < 20) and EMED (20 > lon)
+# from Joey: the "Name" you want is "Mediterranean" and then we have subregions within that WMED (10 > lon), and EMED (10 < lon)
 print(shpfile[shpfile["Name"] == "Mediterranean"])
 medmask = regionmask.mask_geopandas((shpfile[shpfile["Name"] == "Mediterranean"]), lmask.lon, lmask.lat)
 medmask = xr.where(medmask >= 1, 1, np.nan)
 medmask = xr.where( (bmask['barren_mask'][0,:,:] == 1) , np.nan, medmask)
 medmask_cut = medmask.sel(lon=slice(lon1, lon2), lat=slice(lat2, lat1))
 plt.figure()
-medmask.plot()
+#medmask.plot()
 # and manual subreguions
 # WMED
 wmedmask = medmask
-wmedmask = xr.where(wmedmask.lon < 3.5, wmedmask, np.nan)
+wmedmask = xr.where(wmedmask.lon < 10, wmedmask, np.nan)
 wmedmask = xr.where( (bmask['barren_mask'][0,:,:] == 1) , np.nan, wmedmask)
 wmedmask_cut = wmedmask.sel(lon=slice(lon1, lon2), lat=slice(lat2, lat1))
-plt.figure(); wmedmask.plot()
-# CMED
-cmedmask = medmask
-cmedmask = xr.where(cmedmask.lon > 3.5, cmedmask, np.nan)
-cmedmask = xr.where(cmedmask.lon < 20, cmedmask, np.nan)
-cmedmask = xr.where( (bmask['barren_mask'][0,:,:] == 1) , np.nan, cmedmask)
-cmedmask_cut = cmedmask.sel(lon=slice(lon1, lon2), lat=slice(lat2, lat1))
-plt.figure(); cmedmask.plot()
+#plt.figure(); wmedmask.plot()
 # EMED
 emedmask = medmask
-emedmask = xr.where(emedmask.lon > 20, emedmask, np.nan)
+emedmask = xr.where(emedmask.lon >= 10, emedmask, np.nan)
 emedmask = xr.where( (bmask['barren_mask'][0,:,:] == 1) , np.nan, emedmask)
 emedmask_cut = emedmask.sel(lon=slice(lon1, lon2), lat=slice(lat2, lat1))
-plt.figure(); emedmask.plot()
+#plt.figure(); emedmask.plot()
 
 filedate_seq = [dt.datetime.strftime(i, "%Y%m01") for i in pdate_seq[window:]]
 filelist = []
@@ -127,11 +120,11 @@ for idate in filedate_seq[:-3]:
 
 drought_index = {}
 drought_index[window] = xr.open_mfdataset(filelist).sel(lon=slice(lon1, lon2), lat=slice(lat2, lat1))
-print(drought_index[window])
+#print(drought_index[window])
 
 masked_drought_index = drought_index[window] * medmask_cut
 masked_drought_index = xr.where(masked_drought_index == -9999, np.nan, masked_drought_index)
-masked_drought_index.isel(time=-1)[f'{indicator}{window}'].plot()
+#masked_drought_index.isel(time=-1)[f'{indicator}{window}'].plot()
 
 area_2d = calculate_gridarea(masked_drought_index.lat, res=abs(masked_drought_index.lat[1]-masked_drought_index.lat[0]), nlon=len(masked_drought_index.lon))*lmask.sel(lon=slice(lon1, lon2), lat=slice(lat2, lat1))[0,:,:]
 area_2d = xr.DataArray(area_2d, coords={'lat': masked_drought_index.lat,'lon': masked_drought_index.lon}, dims=["lat", "lon"])
@@ -241,19 +234,17 @@ plt.savefig(f"figures/Mediterranean_{indicator}{window}_AID_timeseries_monthly.p
             bbox_inches=None, pad_inches=0.1,
             facecolor='auto', edgecolor='auto',
             backend=None)
-plt.show()
+#plt.show()
 
 
 
 
 aid_subregions = {}
 
-for subregion in ["WMED", "CMED", "EMED"]:
+for subregion in ["WMED", "EMED"]:
 
     if subregion == "WMED":
         subregionmask = wmedmask_cut
-    if subregion == "CMED":
-        subregionmask = cmedmask_cut
     if subregion == "EMED":
         subregionmask = emedmask_cut
 
@@ -305,7 +296,7 @@ for subregion in ["WMED", "CMED", "EMED"]:
         del(tmp, dmask)
 
 
-for subregion in ["WMED", "CMED", "EMED"]:
+for subregion in ["WMED", "EMED"]:
 
     # plot
     fig, ax1 = plt.subplots(1,1, figsize=(12,4))
@@ -373,11 +364,11 @@ for subregion in ["WMED", "CMED", "EMED"]:
                 bbox_inches=None, pad_inches=0.1,
                 facecolor='auto', edgecolor='auto',
                 backend=None)
-    plt.show()
+    #plt.show()
 
 
 
-# create one final dataframe for regions MED (from aid df), and subregions CMED, EMED, WMED (from aid_subregions df)
+# create one final dataframe for regions MED (from aid df), and subregions EMED, WMED (from aid_subregions df)
 myindex = aid[f"w{window}"]["moderate"].index.strftime("%Y-%m")
 region  = "MED"
 aid_mod = aid[f"w{window}"]["moderate"].values
@@ -386,7 +377,7 @@ aid_ext = aid[f"w{window}"]["extreme"].values
 aid_all = aid_mod + aid_sev + aid_ext
 mypd = pd.DataFrame({'date' : myindex, 'drought_index': f"{indicator}{window}", 'region': region, 'AID': aid_all, 'AID_mod': aid_mod, 'AID_sev': aid_sev, 'AID_ext': aid_ext})
 
-for sub in ["CMED", "WMED", "EMED"]:
+for sub in ["WMED", "EMED"]:
 
     myindex = aid_subregions[sub][f"w{window}"]["moderate"].index.strftime("%Y-%m")
     region  = sub #* len(myindex)
@@ -400,4 +391,4 @@ for sub in ["CMED", "WMED", "EMED"]:
     mypd = pd.concat([mypd, dummy])
     print(mypd)
 
-mypd.to_csv(f"data/MEDS_area_in_drought_{indicator}{window}.csv", decimal='.', float_format='%.2f', index=False)
+mypd.to_csv(f"csv/MEDS_area_in_drought_{indicator}{window}.csv", decimal='.', float_format='%.2f', index=False)
