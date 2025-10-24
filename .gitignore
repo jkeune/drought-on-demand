@@ -14,6 +14,13 @@ regions/*
 csv/*
 drought-watch-live/figures/
 drought-watch-live/master_token
+helpers/era5_data/retrieve_era5_moda_potevaporation_1*
+helpers/era5_data/retrieve_era5_moda_precipitation_1*
+helpers/era5_data/retrieve_era5t_moda_potevaporation_2*
+helpers/era5_data/retrieve_era5t_moda_precipitation_2*
+spidi
+helpers/era5_data/data_retrieval
+MEDS*.csv
 # C extensions
 *.so
 
