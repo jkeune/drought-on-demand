@@ -1,0 +1,9 @@
+name: default
+channels:
+- https://conda.modular.com/max-nightly
+- conda-forge
+- nodefaults
+dependencies:
+- xarray >=2026.7.0,<2027
+- regionmask >=0.13.0,<0.14
+
