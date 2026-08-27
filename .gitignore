@@ -109,3 +109,6 @@ slurm-*
 ecsbatch*
 ecbatch*
 geff-python/
+# pixi environments
+.pixi/*
+!.pixi/config.toml
