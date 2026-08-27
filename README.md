@@ -1,12 +1,6 @@
 # drought-on-demand
 
-Scripts to create drought plots using ERA5-Drought data (Keune et al., 2025).
-
-## Content
-This repository contains 
-- several on-demand jupyter notebooks for individual events in `archive` (e.g., `Iceland2024.ipynb`, `Morocco.ipynb`)
-- scripts used to create a mini-webpage with the latest snapshots from ERA5-Drought in `drought-watch-live` ([**DroughtWatch**](https://sites.ecmwf.int/nejk/drought-watch-live/), including `update_timeseries.py` and `update_maps.py`
-- tools to plot **drought stripes** (`drought_stripes`) on demand (attention, needs download of ERA5 data and calculation of drought indices over area of interest). 
+Ready-to-use scripts to create drought plots using ERA5-Drought data (Keune et al., 2025).
 
 ## Get started
 Install pixi and all required modules with
