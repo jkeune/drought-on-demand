@@ -26,7 +26,7 @@ from matplotlib.dates import YearLocator, DateFormatter
 from matplotlib.patches import Rectangle
         
 yyyy      = 2025
-mm        = "09"
+mm        = "10"
 minus     = 12-int(mm)
 
 dataset   = "era5t"

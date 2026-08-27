@@ -20,6 +20,7 @@ module load cdo
 
 
 cd /home/nejk/code/drought-on-demand/drought-watch-live
+python3 update_maps.py
 python3 update_timeseries.py
 
 

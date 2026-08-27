@@ -72,7 +72,7 @@ def worldmap_drought(
     """
 
     # --- Font setup ---
-    plt.rcParams["font.family"] = "Arial"
+    #plt.rcParams["font.family"] = "Arial"
     #plt.rcParams["font.family"] = "Helvetica"
     plt.rcParams["font.size"] = 10
 
@@ -149,7 +149,7 @@ def worldmap_drought(
 ##############
 
 yyyy      = 2025
-mm        = "09"
+mm        = "10"
 
 ref_syyyy = 1991
 ref_eyyyy = 2020

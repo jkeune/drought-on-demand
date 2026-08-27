@@ -52,7 +52,7 @@ def calculate_gridarea(lats_centr, res, nlon):
     )
 
     ## overwrite any areas of 0 (at the poles) with np.NaN to prevent problems
-    areas[np.where(areas == 0.0)] = np.NaN  # only works for arrays
+    areas[np.where(areas == 0.0)] = np.nan  # only works for arrays
     # return array of dimension nlat x nlon
     area_2d = np.swapaxes(np.tile(areas, (nlon, 1)), 0, 1)
     return area_2d
