@@ -1,0 +1,15 @@
+[workspace]
+authors = ["Jessica Keune <jessica.keune@ecmwf.int>"]
+channels = ["https://conda.modular.com/max-nightly", "conda-forge"]
+name = "drought-on-demand"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+xarray = ">=2026.7.0,<2027"
+regionmask = ">=0.13.0,<0.14"
+cdsapi = ">=0.7.7,<0.8"
+cartopy = ">=0.25.0,<0.26"
+netcdf4 = ">=1.7.0,<2"
