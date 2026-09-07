@@ -34,32 +34,16 @@ Sample outputs can be found in figures/maps_drought.
 ### timeseries_area_in_drought.py
 To create timeseries of the area in drought over a selected region, run
 ```
-pixi run python timeseries_area_in_drought.py INDEX ACCUMULATION_WINDOW REGION 
+pixi run python timeseries_area_in_drought.py INDEX ACCUMULATION_WINDOW REGION
 ```
-where INDEX and ACCUMULATION_WINDOW define the drought index (e.g., SPEI and 1 for SPEI-1), and REGION is a Natural Earth country, a continent, or a C3S region such as `C3S_Central_Europe`. The default period is 1980-01 through the previous month.
+where `REGION` can be a Natural Earth country, continent, or C3S region such as `C3S_Central_Europe`. The default period is 1980-01 through the previous month; set `--start YYYY-MM` and `--end YYYY-MM` to change it.
 
-Use `--start YYYY-MM` and `--end YYYY-MM` to request a shorter period. An end month older than the three-month consolidated-data buffer downloads only the consolidated dataset; more recent requests add the required final intermediate months.
-
-To use a feature from a shapefile instead of REGION, provide an attribute filter with `--id`:
+Instead of using continents, countries or hardcoded regions, you can use a shapefile feature:
 ```
 pixi run python timeseries_area_in_drought.py SPEI 3 --shapefile regions/med_v2/three_agb_biomes.shp --id biome_id=1
 ```
 
-The script downloads the older consolidated product and up to the final three months from the intermediate product, writes the monthly percentages to `data`, and saves one stacked moderate/severe/extreme drought-area plot to `figures`.
-
-
-The script download data from the CDS for REGION, saves it to `data` and plots it following default settings (see below). 
-
-
-Examples:
-```
-pixi run python timeseries_area_in_drought.py SPEI 12 global
-pixi run python timeseries_area_in_drought.py SPEI 12 Europe
-pixi run python timeseries_area_in_drought.py SPI 36 Spain
-```
-
-
-Sample outputs can be found in figures/timeseries_area_on_drought.
+In all cases, the script prefers consolidated data and adds intermediate data only for the final three (hardcoded) months when needed. Outputs are written to `data` and `figures`; thresholds and colors are optional settings at the top of the script.
 
 
 ## Under construction
