@@ -29,6 +29,7 @@ START_DATE = "1980-01-01"
 CONSOLIDATED_LAG_MONTHS = 3
 DATA_DIR = Path("data")
 OUTPUT_DIR = Path("figures")
+BARREN_MASK_FILE = Path("masks/barren_mask.nc")
 
 colors = {"moderate": "#b29980", "severe": "#8c6640", "extreme": "#663300"}
 severities = ["extreme", "severe", "moderate"]
@@ -137,6 +138,7 @@ parser.add_argument("--shapefile", type=Path, help="Polygon shapefile to use ins
 parser.add_argument("--id", dest="feature_id", help="Shapefile selection in FIELD=VALUE form.")
 parser.add_argument("--start", type=pd.Timestamp, default=pd.Timestamp(START_DATE), help="First month, YYYY-MM (default: 1980-01).")
 parser.add_argument("--end", type=pd.Timestamp, help="Last month, YYYY-MM (default: previous month).")
+parser.add_argument("--barren_area_masking", choices=["True", "False"], default="True", help="Exclude barren land (default: True).")
 arguments = parser.parse_args()
 if bool(arguments.region) == bool(arguments.shapefile):
     parser.error("Provide exactly one REGION or --shapefile PATH.")
@@ -187,6 +189,13 @@ variable = variable.rename(coordinate_names).sel(time=slice(start, end)).where(v
 
 # mask to region of interest
 mask = regionmask.Regions([geometry]).mask(variable.lon, variable.lat).notnull()
+if arguments.barren_area_masking == "True":
+    if not BARREN_MASK_FILE.exists():
+        raise FileNotFoundError(f"Barren mask not found: {BARREN_MASK_FILE}")
+    barren_dataset = xr.open_dataset(BARREN_MASK_FILE)
+    barren_mask = barren_dataset["barren_mask"].isel(time=0).reindex_like(mask, method="nearest").load()
+    barren_dataset.close()
+    mask = mask.where(barren_mask != 1)
 variable = variable.where(mask)
 
 # calcululate area of each grid cell for proper area weighting

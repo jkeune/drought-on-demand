@@ -12,7 +12,7 @@
 # pixi run python map_drought.py SPI 3 2023 7 C3S_Europe
 
 
-import sys
+import argparse
 import os
 import xarray as xr
 import regionmask
@@ -24,6 +24,9 @@ import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from matplotlib.lines import Line2D
+
+
+BARREN_MASK_FILE = Path("masks/barren_mask.nc")
 
 def get_continent_country_mapping():
     """
@@ -82,17 +85,26 @@ def get_continent_country_mapping():
 
 # system arguements
 # pixi run python map_drought.py INDEX ACCUMULATION YEAR MONTH REGION
-index=sys.argv[1]
-accumulation=sys.argv[2]
-year=sys.argv[3]
-month=str(sys.argv[4]).zfill(2)
-region=sys.argv[5:]
+parser = argparse.ArgumentParser(description="Download and plot an ERA5-Drought snapshot.")
+parser.add_argument("index", help="Drought index to download, e.g. SPI or SPEI.")
+parser.add_argument("accumulation", help="Accumulation period in months.")
+parser.add_argument("year", help="Snapshot year.")
+parser.add_argument("month", help="Snapshot month.")
+parser.add_argument("region", nargs="+", help="Continent or C3S region to plot.")
+parser.add_argument("--barren_area_masking", choices=["True", "False"], default="True", help="Exclude barren land (default: True).")
+arguments = parser.parse_args()
+index = arguments.index
+accumulation = arguments.accumulation
+year = arguments.year
+month = str(arguments.month).zfill(2)
+region = arguments.region
+barren_area_masking = arguments.barren_area_masking == "True"
 
 print(f"Running map_drought.py with arguments: INDEX={index}, ACCUMULATION={accumulation}, REGION={region}, YEAR={year}, MONTH={month}")
 
 #%%
 # Define region using regionmask (countries or continents)
-regions_to_check = sys.argv[5:]
+regions_to_check = region
 continent_mapping = get_continent_country_mapping()
 custom_regions = {
     "C3S_Europe": [-25, 40, 34, 72],  # west, east, south, north
@@ -245,11 +257,18 @@ else:
 
 #%%
 # Read and plot a map of the downloaded drought index
-def plot_drought_snapshot(data, index, accumulation, year, month, region_label, lon1, lon2, lat1, lat2):
+def plot_drought_snapshot(data, index, accumulation, year, month, region_label, lon1, lon2, lat1, lat2, barren_area_masking):
     levels = [-10000, -1000, -2, -1.5, -1, 1, 1.5, 2, 1000]
     colors = ["#bebebe", "#663300", "#8c6640", "#b29980", "#ffffff", "#99b280", "#668c40", "#336600"]
     labels = ["masked", "extremely dry", "severely dry", "moderately dry", "near normal", "moderately wet", "severely wet", "extremely wet"]
     snapshot = data.squeeze(drop=True).where(data.squeeze(drop=True) != -9999)
+    if barren_area_masking:
+        if not BARREN_MASK_FILE.exists():
+            raise FileNotFoundError(f"Barren mask not found: {BARREN_MASK_FILE}")
+        barren_dataset = xr.open_dataset(BARREN_MASK_FILE)
+        barren_mask = barren_dataset["barren_mask"].isel(time=0).reindex_like(snapshot, method="nearest").load()
+        barren_dataset.close()
+        snapshot = snapshot.where(barren_mask != 1)
     output_file = Path("figures") / f"{index.upper()}{accumulation}_{year}{month}_{region_label}.png"
 
     figure = plt.figure(figsize=(9, 6))
@@ -282,6 +301,6 @@ variable_name = next(iter(downloaded_data.data_vars))
 region_label = "_".join(regions_to_check)
 plot_drought_snapshot(
     downloaded_data[variable_name], index, accumulation, year, month, region_label,
-    lon1, lon2, lat1, lat2,
+    lon1, lon2, lat1, lat2, barren_area_masking,
 )
 downloaded_data.close()

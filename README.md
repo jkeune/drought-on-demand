@@ -61,7 +61,7 @@ A script to (calculate and) plot drought stripes is under construction (examples
 #### Land
 ERA5-Drought is only defined over land and masked accordingly. ERA5 data as used in timeseries_region.py and drought_stripes.py is masked using the ERA5 land mask.
 #### Barren areas
-By default, barren areas are masked. To switch that off, use `--barren_area_masking False`. The barren area mask from `masks/` is used. 
+`map_drought.py` and `timeseries_area_in_drought.py` exclude barren land by default, using `masks/barren_mask.nc`. Set `--barren_area_masking False` to retain it; time-series percentages then include barren pixels.
 #### Significance masking
 By default, non-significant values are __not__ masked. To switch that on, use `--significance_masking True`. Data for masking is downloaded from the CDS.
 
