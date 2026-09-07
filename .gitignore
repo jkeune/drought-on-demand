@@ -109,6 +109,12 @@ slurm-*
 ecsbatch*
 ecbatch*
 geff-python/
+MOZ*
+archive/csv/*.csv
+archive/csv/**/*.csv
+archive/drought_stripes/figures/*.png
+archive/helpers/era5_data/*/*.nc
+
 # pixi environments
 .pixi/*
 !.pixi/config.toml
