@@ -30,6 +30,7 @@ CONSOLIDATED_LAG_MONTHS = 3
 DATA_DIR = Path("data")
 OUTPUT_DIR = Path("figures")
 BARREN_MASK_FILE = Path("masks/barren_mask.nc")
+PZERO_THRESHOLD = 0.9
 
 colors = {"moderate": "#b29980", "severe": "#8c6640", "extreme": "#663300"}
 severities = ["extreme", "severe", "moderate"]
@@ -129,6 +130,47 @@ def download_dataset(index, accumulation, dates, geometry, dataset_type, destina
     zip_path.unlink()
     return destination
 
+
+def download_static_masks(index, accumulation, months, geometry, destination, significance_masking, pzero_masking):
+    variables = []
+    if significance_masking:
+        variables.append(f"test_for_normality_{index}")
+    if pzero_masking:
+        variables.append("probability_of_zero_precipitation_spi")
+    west, south, east, north = geometry.bounds
+    zip_path = destination.with_suffix(".zip")
+    request = {
+        "variable": variables,
+        "accumulation_period": [str(accumulation)],
+        "version": ["1_0"],
+        "product_type": ["reanalysis"],
+        "dataset_type": ["consolidated_dataset"],
+        "month": months,
+        "area": [north, west, south, east],
+    }
+    print(f"Downloading consolidated static masks for months: {', '.join(months)}")
+    cdsapi.Client().retrieve("derived-drought-historical-monthly", request).download(str(zip_path))
+    with zipfile.ZipFile(zip_path) as archive:
+        netcdf_names = [name for name in archive.namelist() if name.endswith(".nc")]
+        if not netcdf_names:
+            raise ValueError(f"No NetCDF files found in CDS download: {zip_path}")
+        extracted_paths = []
+        for number, netcdf_name in enumerate(netcdf_names):
+            extracted_path = destination.parent / f"{destination.stem}_{number}.nc"
+            with archive.open(netcdf_name) as source, open(extracted_path, "wb") as target:
+                target.write(source.read())
+            extracted_paths.append(extracted_path)
+    datasets = [xr.open_dataset(path) for path in extracted_paths]
+    static_data = xr.merge(datasets, compat="override")
+    static_data.to_netcdf(destination)
+    static_data.close()
+    for dataset in datasets:
+        dataset.close()
+    for extracted_path in extracted_paths:
+        extracted_path.unlink()
+    zip_path.unlink()
+    return destination
+
 #
 parser = argparse.ArgumentParser(description="Create a monthly stacked drought-area time series from ERA5-Drought.")
 parser.add_argument("index", type=str.lower, choices=["spi", "spei"], help="Drought index: SPI or SPEI.")
@@ -139,11 +181,15 @@ parser.add_argument("--id", dest="feature_id", help="Shapefile selection in FIEL
 parser.add_argument("--start", type=pd.Timestamp, default=pd.Timestamp(START_DATE), help="First month, YYYY-MM (default: 1980-01).")
 parser.add_argument("--end", type=pd.Timestamp, help="Last month, YYYY-MM (default: previous month).")
 parser.add_argument("--barren_area_masking", choices=["True", "False"], default="True", help="Exclude barren land (default: True).")
+parser.add_argument("--significance_masking", choices=["True", "False"], default="False", help="Exclude non-normal index fits (default: False).")
+parser.add_argument("--pzero_masking", choices=["True", "False"], default="False", help="For SPI only, exclude high zero-precipitation probability pixels (default: False).")
 arguments = parser.parse_args()
 if bool(arguments.region) == bool(arguments.shapefile):
     parser.error("Provide exactly one REGION or --shapefile PATH.")
 if arguments.accumulation_window < 1:
     parser.error("ACCUMULATION_WINDOW must be at least 1.")
+if arguments.pzero_masking == "True" and arguments.index != "spi":
+    parser.error("--pzero_masking is available only for SPI.")
 
 # define region based on command line inputs
 try:
@@ -197,6 +243,22 @@ if arguments.barren_area_masking == "True":
     barren_dataset.close()
     mask = mask.where(barren_mask != 1)
 variable = variable.where(mask)
+if arguments.significance_masking == "True" or arguments.pzero_masking == "True":
+    months = sorted({f"{date.month:02d}" for date in dates})
+    static_mask_label = "significance_pzero" if arguments.significance_masking == "True" and arguments.pzero_masking == "True" else "significance" if arguments.significance_masking == "True" else "pzero"
+    static_file = DATA_DIR / f"{arguments.index.upper()}{arguments.accumulation_window}_{''.join(months)}_{region_label}_{static_mask_label}_masks.nc"
+    if not static_file.exists():
+        download_static_masks(arguments.index, arguments.accumulation_window, months, geometry, static_file, arguments.significance_masking == "True", arguments.pzero_masking == "True")
+    static_dataset = xr.open_dataset(static_file)
+    if arguments.significance_masking == "True":
+        static_mask = static_dataset[f"significance"]
+        normality_mask = xr.concat([static_mask.where(static_mask.time.dt.month == date.dt.month, drop=True).isel(time=0, drop=True) for date in variable.time], dim=variable.time).reindex_like(variable, method="nearest")
+        variable = variable.where(normality_mask != 0)
+    if arguments.pzero_masking and arguments.index.lower() == "spi":
+        static_mask = static_dataset["pzero"]
+        pzero_mask = xr.concat([static_mask.where(static_mask.time.dt.month == date.dt.month, drop=True).isel(time=0, drop=True) for date in variable.time], dim=variable.time).reindex_like(variable, method="nearest")
+        variable = variable.where(pzero_mask < PZERO_THRESHOLD)
+    static_dataset.close()
 
 # calcululate area of each grid cell for proper area weighting
 lat_resolution = float(abs(variable.lat[1] - variable.lat[0]))

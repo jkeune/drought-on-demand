@@ -14,6 +14,7 @@
 
 import argparse
 import os
+import sys
 import xarray as xr
 import regionmask
 import cdsapi
@@ -27,6 +28,7 @@ from matplotlib.lines import Line2D
 
 
 BARREN_MASK_FILE = Path("masks/barren_mask.nc")
+PZERO_THRESHOLD = 0.9
 
 def get_continent_country_mapping():
     """
@@ -92,6 +94,8 @@ parser.add_argument("year", help="Snapshot year.")
 parser.add_argument("month", help="Snapshot month.")
 parser.add_argument("region", nargs="+", help="Continent or C3S region to plot.")
 parser.add_argument("--barren_area_masking", choices=["True", "False"], default="True", help="Exclude barren land (default: True).")
+parser.add_argument("--significance_masking", choices=["True", "False"], default="False", help="Exclude non-normal index fits (default: False).")
+parser.add_argument("--pzero_masking", choices=["True", "False"], default="False", help="For SPI only, exclude high zero-precipitation probability pixels (default: False).")
 arguments = parser.parse_args()
 index = arguments.index
 accumulation = arguments.accumulation
@@ -99,6 +103,10 @@ year = arguments.year
 month = str(arguments.month).zfill(2)
 region = arguments.region
 barren_area_masking = arguments.barren_area_masking == "True"
+significance_masking = arguments.significance_masking == "True"
+pzero_masking = arguments.pzero_masking == "True"
+if pzero_masking and index.lower() != "spi":
+    parser.error("--pzero_masking is available only for SPI.")
 
 print(f"Running map_drought.py with arguments: INDEX={index}, ACCUMULATION={accumulation}, REGION={region}, YEAR={year}, MONTH={month}")
 
@@ -244,6 +252,48 @@ def download_era5drought(index, accumulation, year, month, dataset_type, zfile, 
     client.retrieve(dataset, request).download(str(zfile))
     unzip_cds_data(zfile)
 
+
+def download_static_masks(index, accumulation, month, zfile, lon1, lon2, lat1, lat2, significance_masking, pzero_masking):
+    variables = []
+    if significance_masking:
+        variables.append(f"test_for_normality_{index.lower()}")
+    if pzero_masking:
+        variables.append("probability_of_zero_precipitation_spi")
+    if not variables:
+        return None
+    request = {
+        "variable": variables,
+        "accumulation_period": [accumulation],
+        "version": "1_0",
+        "product_type": ["reanalysis"],
+        "dataset_type": ["consolidated_dataset"],
+        "month": [month],
+        "area": [lat2, lon1, lat1, lon2],
+    }
+    zip_path = zfile.with_suffix(".zip")
+    print(f"Downloading consolidated static masks for month {month}")
+    cdsapi.Client().retrieve("derived-drought-historical-monthly", request).download(str(zip_path))
+    with zipfile.ZipFile(zip_path) as archive:
+        netcdf_names = [name for name in archive.namelist() if name.endswith(".nc")]
+        if not netcdf_names:
+            raise ValueError(f"No NetCDF files found in CDS download: {zip_path}")
+        extracted_paths = []
+        for number, netcdf_name in enumerate(netcdf_names):
+            extracted_path = zfile.parent / f"{zfile.stem}_{number}.nc"
+            with archive.open(netcdf_name) as source, open(extracted_path, "wb") as target:
+                target.write(source.read())
+            extracted_paths.append(extracted_path)
+    datasets = [xr.open_dataset(path) for path in extracted_paths]
+    static_data = xr.merge(datasets, compat="override")
+    static_data.to_netcdf(zfile)
+    static_data.close()
+    for dataset in datasets:
+        dataset.close()
+    for extracted_path in extracted_paths:
+        extracted_path.unlink()
+    zip_path.unlink()
+    return zfile
+
 # Try downloading the consolidated dataset first; a CDS failure falls back to intermediate.
 if ncfile.exists():
     print(f"Using existing download: {ncfile}")
@@ -257,7 +307,7 @@ else:
 
 #%%
 # Read and plot a map of the downloaded drought index
-def plot_drought_snapshot(data, index, accumulation, year, month, region_label, lon1, lon2, lat1, lat2, barren_area_masking):
+def plot_drought_snapshot(data, index, accumulation, year, month, region_label, lon1, lon2, lat1, lat2, barren_area_masking, significance_masking, pzero_masking):
     levels = [-10000, -1000, -2, -1.5, -1, 1, 1.5, 2, 1000]
     colors = ["#bebebe", "#663300", "#8c6640", "#b29980", "#ffffff", "#99b280", "#668c40", "#336600"]
     labels = ["masked", "extremely dry", "severely dry", "moderately dry", "near normal", "moderately wet", "severely wet", "extremely wet"]
@@ -269,6 +319,19 @@ def plot_drought_snapshot(data, index, accumulation, year, month, region_label, 
         barren_mask = barren_dataset["barren_mask"].isel(time=0).reindex_like(snapshot, method="nearest").load()
         barren_dataset.close()
         snapshot = snapshot.where(barren_mask != 1)
+    if significance_masking or pzero_masking:
+        static_mask_label = "significance_pzero" if significance_masking and pzero_masking else "significance" if significance_masking else "pzero"
+        static_file = Path("data") / f"{index}{accumulation}_{month}_{region_label}_{static_mask_label}_masks.nc"
+        if not static_file.exists():
+            download_static_masks(index, accumulation, month, static_file, lon1, lon2, lat1, lat2, significance_masking, pzero_masking)
+        static_dataset = xr.open_dataset(static_file)
+        if significance_masking:
+            normality_mask = static_dataset[f"significance"].isel(time=0, drop=True).reindex_like(snapshot, method="nearest")
+            snapshot = snapshot.where(normality_mask != 0)
+        if pzero_masking and index.lower() == "spi":
+            pzero_mask = static_dataset["pzero"].isel(time=0, drop=True).reindex_like(snapshot, method="nearest")
+            snapshot = snapshot.where(pzero_mask < PZERO_THRESHOLD)
+        static_dataset.close()
     output_file = Path("figures") / f"{index.upper()}{accumulation}_{year}{month}_{region_label}.png"
 
     figure = plt.figure(figsize=(9, 6))
@@ -301,6 +364,6 @@ variable_name = next(iter(downloaded_data.data_vars))
 region_label = "_".join(regions_to_check)
 plot_drought_snapshot(
     downloaded_data[variable_name], index, accumulation, year, month, region_label,
-    lon1, lon2, lat1, lat2, barren_area_masking,
+    lon1, lon2, lat1, lat2, barren_area_masking, significance_masking, pzero_masking,
 )
 downloaded_data.close()

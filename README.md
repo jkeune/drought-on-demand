@@ -63,7 +63,9 @@ ERA5-Drought is only defined over land and masked accordingly. ERA5 data as used
 #### Barren areas
 `map_drought.py` and `timeseries_area_in_drought.py` exclude barren land by default, using `masks/barren_mask.nc`. Set `--barren_area_masking False` to retain it; time-series percentages then include barren pixels.
 #### Significance masking
-By default, non-significant values are __not__ masked. To switch that on, use `--significance_masking True`. Data for masking is downloaded from the CDS.
+Use `--significance_masking True` to exclude grid cells where the monthly normality test fails. The consolidated monthly mask is applied by calendar month, including to intermediate data.
+#### Zero-precipitation probability
+For SPI only, use `--pzero_masking True` to exclude cells with a monthly zero-precipitation probability of 0.9 or greater.
 
 ### Drought severity thresholds
 By default, the following thresholds are used to define drought severity categories:
