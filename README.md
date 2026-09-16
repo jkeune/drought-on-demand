@@ -38,11 +38,6 @@ pixi run python timeseries_area_in_drought.py INDEX ACCUMULATION_WINDOW REGION
 ```
 where `REGION` can be a Natural Earth country, continent, or C3S region such as `C3S_Central_Europe`. The default period is 1980-01 through the previous month; set `--start YYYY-MM` and `--end YYYY-MM` to change it.
 
-Instead of using continents, countries or hardcoded regions, you can use a shapefile feature:
-```
-pixi run python timeseries_area_in_drought.py SPEI 3 --shapefile regions/med_v2/three_agb_biomes.shp --id biome_id=1
-```
-
 In all cases, the script prefers consolidated data and adds intermediate data only for the final three (hardcoded) months when needed. Outputs are written to `data` and `figures`; thresholds and colors are optional settings at the top of the script.
 
 Sample figures: [figures/SPEI6_198001_202608_C3S_Central_Europe_area_in_drought.png](figures/SPEI6_198001_202608_C3S_Central_Europe_area_in_drought.png) and [figures/SPEI12_198001_202608_C3S_Central_Europe_area_in_drought.png](figures/SPEI12_198001_202608_C3S_Central_Europe_area_in_drought.png).
@@ -59,6 +54,12 @@ A script to (calculate and) plot drought stripes is under construction (examples
 ## Other settings and notes
 
 ### Masks
+#### Shapefile region
+Instead of a named region, use `--shapefile PATH --id FIELD=VALUE` to plot or calculate only the selected polygon feature. Outside the selected geometry, map values are transparent. For example:
+```
+pixi run python map_drought.py SPEI 3 2026 7 --shapefile regions/med_v2/three_agb_biomes.shp --id biome_id=1
+pixi run python timeseries_area_in_drought.py SPEI 3 --shapefile regions/med_v2/three_agb_biomes.shp --id biome_id=1
+```
 #### Land
 ERA5-Drought is only defined over land and masked accordingly. ERA5 data as used in timeseries_region.py and drought_stripes.py is masked using the ERA5 land mask.
 #### Barren areas

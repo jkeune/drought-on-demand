@@ -18,7 +18,10 @@ import sys
 import xarray as xr
 import regionmask
 import cdsapi
+import geopandas as gpd
 from pathlib import Path
+import re
+from shapely.ops import unary_union
 import zipfile
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -92,7 +95,9 @@ parser.add_argument("index", help="Drought index to download, e.g. SPI or SPEI."
 parser.add_argument("accumulation", help="Accumulation period in months.")
 parser.add_argument("year", help="Snapshot year.")
 parser.add_argument("month", help="Snapshot month.")
-parser.add_argument("region", nargs="+", help="Continent or C3S region to plot.")
+parser.add_argument("region", nargs="*", help="Continent or C3S region to plot.")
+parser.add_argument("--shapefile", type=Path, help="Polygon shapefile to mask instead of REGION.")
+parser.add_argument("--id", dest="feature_id", help="Shapefile selection in FIELD=VALUE form.")
 parser.add_argument("--barren_area_masking", choices=["True", "False"], default="True", help="Exclude barren land (default: True).")
 parser.add_argument("--significance_masking", choices=["True", "False"], default="False", help="Exclude non-normal index fits (default: False).")
 parser.add_argument("--pzero_masking", choices=["True", "False"], default="False", help="For SPI only, exclude high zero-precipitation probability pixels (default: False).")
@@ -105,6 +110,8 @@ region = arguments.region
 barren_area_masking = arguments.barren_area_masking == "True"
 significance_masking = arguments.significance_masking == "True"
 pzero_masking = arguments.pzero_masking == "True"
+if bool(region) == bool(arguments.shapefile):
+    parser.error("Provide at least one REGION or --shapefile PATH, but not both.")
 if pzero_masking and index.lower() != "spi":
     parser.error("--pzero_masking is available only for SPI.")
 
@@ -125,46 +132,50 @@ custom_regions = {
 for fixed_region in custom_regions:
     continent_mapping[fixed_region] = continent_mapping["Europe"]
 
-# Use only natural_earth_v5_1_2 for region names
-countries = regionmask.defined_regions.natural_earth_v5_1_2.countries_110
-
-# expand continent names to country lists and validate
-countries_in_continent = []
-for region_name in regions_to_check:
-    if region_name in continent_mapping:
-        countries_in_continent.extend(continent_mapping[region_name])
-        print(f"Expanding continent '{region_name}' to {len(continent_mapping[region_name])} countries")
-    else:
-        print(f"Error: '{region_name}' is not a valid continent name")
-        print(f"Valid continents: {', '.join(continent_mapping.keys())}")
+if arguments.shapefile:
+    if not arguments.feature_id or "=" not in arguments.feature_id:
+        parser.error("Shapefile input requires --id FIELD=VALUE.")
+    field, value = arguments.feature_id.split("=", 1)
+    features = gpd.read_file(arguments.shapefile).to_crs("EPSG:4326")
+    if field not in features:
+        parser.error(f"Field '{field}' is not in {arguments.shapefile}. Available fields: {', '.join(features.columns)}")
+    selected = features[features[field].astype(str) == value]
+    if selected.empty:
+        parser.error(f"No feature in {arguments.shapefile} has {field}={value!r}.")
+    mask_geometry = unary_union(selected.geometry)
+    lon1, lat1, lon2, lat2 = mask_geometry.bounds
+    region_label = re.sub(r"[^A-Za-z0-9_.-]+", "_", f"{arguments.shapefile.stem}_{field}_{value}")
+else:
+    # Use only natural_earth_v5_1_2 for region names
+    countries = regionmask.defined_regions.natural_earth_v5_1_2.countries_110
+    countries_in_continent = []
+    for region_name in regions_to_check:
+        if region_name in continent_mapping:
+            countries_in_continent.extend(continent_mapping[region_name])
+            print(f"Expanding continent '{region_name}' to {len(continent_mapping[region_name])} countries")
+        else:
+            print(f"Error: '{region_name}' is not a valid continent name")
+            print(f"Valid continents: {', '.join(continent_mapping.keys())}")
+            sys.exit(1)
+    region = countries_in_continent
+    all_lons = []
+    all_lats = []
+    for country_name in region:
+        if country_name in countries.names:
+            idx = countries.names.index(country_name)
+            bounds = countries.regions[idx].bounds
+            all_lons.extend([bounds[0], bounds[2]])
+            all_lats.extend([bounds[1], bounds[3]])
+    if not all_lons or not all_lats:
+        print("Error: No valid regions found")
         sys.exit(1)
-
-# Update region variable with expanded list
-region = countries_in_continent
-#print(region)
-
-# Get bounds for the combined region
-# Match region names and get their bounds using the names list
-all_lons = []
-all_lats = []
-for country_name in region:
-    if country_name in countries.names:
-        idx = countries.names.index(country_name)
-        r = countries.regions[idx]
-        bounds = r.bounds
-        all_lons.extend([bounds[0], bounds[2]])  # minx, maxx
-        all_lats.extend([bounds[1], bounds[3]])  # miny, maxy
-
-if all_lons and all_lats:
     lon1, lon2 = min(all_lons), max(all_lons)
     lat1, lat2 = min(all_lats), max(all_lats)
     if len(regions_to_check) == 1 and regions_to_check[0] in custom_regions:
         lon1, lon2, lat1, lat2 = custom_regions[regions_to_check[0]]
         print(f"Using fixed bounds for {regions_to_check[0]}: lat=[{lat1}, {lat2}], lon=[{lon1}, {lon2}]")
-    #print(f"Region bounds: lat=[{lat1:.2f}, {lat2:.2f}], lon=[{lon1:.2f}, {lon2:.2f}]")
-else:
-    print("Error: No valid regions found")
-    sys.exit(1)
+    mask_geometry = None
+    region_label = "_".join(regions_to_check)
 
 #%% Define dataset to download
 # 1 - drought indices 
@@ -211,7 +222,7 @@ def unzip_cds_data(zipfile_path):
     os.remove(zipfile_path)
     print(f"  Removed: {zipfile_path.name}")
 
-zfile = Path("data") / f"{index}{accumulation}_{year}{month}_{region_name}.zip"
+zfile = Path("data") / f"{index}{accumulation}_{year}{month}_{region_label}.zip"
 ncfile = zfile.with_suffix('.nc')
 
 print(zfile)
@@ -307,11 +318,14 @@ else:
 
 #%%
 # Read and plot a map of the downloaded drought index
-def plot_drought_snapshot(data, index, accumulation, year, month, region_label, lon1, lon2, lat1, lat2, barren_area_masking, significance_masking, pzero_masking):
+def plot_drought_snapshot(data, index, accumulation, year, month, region_label, lon1, lon2, lat1, lat2, mask_geometry, barren_area_masking, significance_masking, pzero_masking):
     levels = [-10000, -1000, -2, -1.5, -1, 1, 1.5, 2, 1000]
     colors = ["#bebebe", "#663300", "#8c6640", "#b29980", "#ffffff", "#99b280", "#668c40", "#336600"]
     labels = ["masked", "extremely dry", "severely dry", "moderately dry", "near normal", "moderately wet", "severely wet", "extremely wet"]
     snapshot = data.squeeze(drop=True).where(data.squeeze(drop=True) != -9999)
+    if mask_geometry is not None:
+        shapefile_mask = regionmask.Regions([mask_geometry]).mask(snapshot.lon, snapshot.lat).notnull()
+        snapshot = snapshot.where(shapefile_mask)
     if barren_area_masking:
         if not BARREN_MASK_FILE.exists():
             raise FileNotFoundError(f"Barren mask not found: {BARREN_MASK_FILE}")
@@ -345,6 +359,15 @@ def plot_drought_snapshot(data, index, accumulation, year, month, region_label, 
     )
     axis.coastlines(color="black", linewidth=0.5)
     axis.add_feature(cfeature.BORDERS, color="black", linewidth=0.3)
+    if mask_geometry is not None:
+        axis.add_geometries(
+            [mask_geometry],
+            crs=ccrs.PlateCarree(),
+            facecolor="none",
+            edgecolor="black",
+            linewidth=1.5,
+            linestyle="--",
+        )
     axis.set_extent([lon1, lon2, lat1, lat2], crs=ccrs.PlateCarree())
     axis.set_title(f"{index.upper()}-{accumulation} | {year}-{month}")
     axis.legend(
@@ -361,9 +384,8 @@ def plot_drought_snapshot(data, index, accumulation, year, month, region_label, 
 
 downloaded_data = xr.open_dataset(ncfile)
 variable_name = next(iter(downloaded_data.data_vars))
-region_label = "_".join(regions_to_check)
 plot_drought_snapshot(
     downloaded_data[variable_name], index, accumulation, year, month, region_label,
-    lon1, lon2, lat1, lat2, barren_area_masking, significance_masking, pzero_masking,
+    lon1, lon2, lat1, lat2, mask_geometry, barren_area_masking, significance_masking, pzero_masking,
 )
 downloaded_data.close()
