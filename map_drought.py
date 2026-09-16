@@ -27,7 +27,7 @@ from matplotlib.colors import ListedColormap
 from matplotlib.lines import Line2D
 
 
-BARREN_MASK_FILE = Path("masks/barren_mask.nc")
+BARREN_MASK_FILE = Path("masks/ERA5_barren_w_precip.nc")
 PZERO_THRESHOLD = 0.9
 
 def get_continent_country_mapping():
@@ -316,7 +316,7 @@ def plot_drought_snapshot(data, index, accumulation, year, month, region_label, 
         if not BARREN_MASK_FILE.exists():
             raise FileNotFoundError(f"Barren mask not found: {BARREN_MASK_FILE}")
         barren_dataset = xr.open_dataset(BARREN_MASK_FILE)
-        barren_mask = barren_dataset["barren_mask"].isel(time=0).reindex_like(snapshot, method="nearest").load()
+        barren_mask = barren_dataset["barren_mask"].reindex_like(snapshot, method="nearest").load()
         barren_dataset.close()
         snapshot = snapshot.where(barren_mask != 1)
     if significance_masking or pzero_masking:

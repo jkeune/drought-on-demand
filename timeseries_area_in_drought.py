@@ -29,7 +29,7 @@ START_DATE = "1980-01-01"
 CONSOLIDATED_LAG_MONTHS = 3
 DATA_DIR = Path("data")
 OUTPUT_DIR = Path("figures")
-BARREN_MASK_FILE = Path("masks/barren_mask.nc")
+BARREN_MASK_FILE = Path("masks/ERA5_barren_w_precip.nc")
 PZERO_THRESHOLD = 0.9
 
 colors = {"moderate": "#b29980", "severe": "#8c6640", "extreme": "#663300"}
@@ -239,7 +239,7 @@ if arguments.barren_area_masking == "True":
     if not BARREN_MASK_FILE.exists():
         raise FileNotFoundError(f"Barren mask not found: {BARREN_MASK_FILE}")
     barren_dataset = xr.open_dataset(BARREN_MASK_FILE)
-    barren_mask = barren_dataset["barren_mask"].isel(time=0).reindex_like(mask, method="nearest").load()
+    barren_mask = barren_dataset["barren_mask"].reindex_like(mask, method="nearest").load()
     barren_dataset.close()
     mask = mask.where(barren_mask != 1)
 variable = variable.where(mask)

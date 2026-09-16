@@ -61,15 +61,15 @@ A script to (calculate and) plot drought stripes is under construction (examples
 #### Land
 ERA5-Drought is only defined over land and masked accordingly. ERA5 data as used in timeseries_region.py and drought_stripes.py is masked using the ERA5 land mask.
 #### Barren areas
-`map_drought.py` and `timeseries_area_in_drought.py` exclude barren land by default, using `masks/barren_mask.nc`. Set `--barren_area_masking False` to retain it; time-series percentages then include barren pixels.
+`map_drought.py` and `timeseries_area_in_drought.py` exclude barren land by default, using `masks/ERA5_barren_w_precip.nc`. Set `--barren_area_masking False` to retain it; time-series percentages then include barren pixels.
 #### Significance masking
 Use `--significance_masking True` to exclude grid cells where the monthly normality test fails. The consolidated monthly mask is applied by calendar month, including to intermediate data.
 #### Zero-precipitation probability
-For SPI only, use `--pzero_masking True` to exclude cells with a monthly zero-precipitation probability of 0.9 or greater.
+For SPI only, use `--pzero_masking True` to exclude cells with a monthly zero-precipitation probability of 0.9 or greater. To change the threshold, manually modify it at the top of each script.
 
 ### Drought severity thresholds
 By default, the following thresholds are used to define drought severity categories:
-extreme (index <= -2), severe (-2 < index <= -1.5), moderate (-1.5 < index <= -1)
+extreme (index <= -2), severe (-2 < index <= -1.5), moderate (-1.5 < index <= -1). These are set at the beginning of each script and can be modified manually.
 
 ### Regions and continents
 Regions are continents are masked using the [regionmask](https://regionmask.readthedocs.io/en/stable/) library, which contains Giorgi and SREX regions (e.g., `WNA` for Western North America, etc), AR6 and PRUDENCE regions, but also states and countries from NaturalEarth. 
