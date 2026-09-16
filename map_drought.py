@@ -332,7 +332,7 @@ def plot_drought_snapshot(data, index, accumulation, year, month, region_label, 
         barren_dataset = xr.open_dataset(BARREN_MASK_FILE)
         barren_mask = barren_dataset["barren_mask"].reindex_like(snapshot, method="nearest").load()
         barren_dataset.close()
-        snapshot = snapshot.where(barren_mask != 1)
+        snapshot = snapshot.where(barren_mask == 1)
     if significance_masking or pzero_masking:
         static_mask_label = "significance_pzero" if significance_masking and pzero_masking else "significance" if significance_masking else "pzero"
         static_file = Path("data") / f"{index}{accumulation}_{month}_{region_label}_{static_mask_label}_masks.nc"
