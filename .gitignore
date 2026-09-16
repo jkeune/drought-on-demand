@@ -7,7 +7,7 @@ drought_stripes/spidi/*
 drought_stripes/data
 drought_stripes/figures
 masks/*nc
-!masks/barren_mask.nc
+!masks/ERA5_barren_w_precip.nc
 masks/*grib
 masks/output
 figures/*
