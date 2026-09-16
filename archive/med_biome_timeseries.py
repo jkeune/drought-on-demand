@@ -2,9 +2,10 @@
 
 Set PMPET_FILE to the downloaded ERA5 precipitation-minus-potential-evaporation
 NetCDF file before running. It must contain a monthly variable named PMPET_VARIABLE
-on time, lat, lon coordinates, in mm day-1, from at least 1991-01 through today.
+on time, lat, lon coordinates, in mm day-1, from at least 1991-01 through 2020-12 
+(and N preceeding months for N accumulation window)
 
-Run with: pixi run python med_biome_timeseries.py [--calculate both|area|spei] [--plot True]
+Run with: pixi run python archive/med_biome_timeseries.py [--calculate both|area|spei] [--plot True]
 """
 
 import argparse
@@ -26,8 +27,11 @@ from spidi.spidi.spidi import calculate_si
 REFERENCE_START = 1991
 REFERENCE_END = 2020
 SERIES_START = "2003-01-01"
-SERIES_END = "2025-12-31"
+SERIES_END = "2026-08-30"
 WINDOW = 3
+# Need to use ERA5T if SERIES_END extends beyond ERA5, indicate here the buffer needed
+# ! check manually ! on https://cds.climate.copernicus.eu/datasets/derived-drought-historical-monthly?tab=download
+CONSOLIDATED_LAG_MONTHS = 2
 PMET_START = (
     pd.Timestamp(f"{REFERENCE_START}-01-01") - pd.DateOffset(months=WINDOW - 1)
 ).strftime("%Y-%m-%d")
@@ -35,7 +39,7 @@ SHAPEFILE = Path("regions/med_v2/three_agb_biomes.shp")
 BIOME_IDS = [1, 2, 3]
 pmet_file = Path("archive/helpers/era5_data/data_retrieval_regional/wb_all_regional.nc")
 PMPET_VARIABLE = "wb"
-GRID_DATA_DIR = Path("data/med_biome_spei3")
+GRID_DATA_DIR = Path(f"data/med_biome_spei{WINDOW}")
 OUTPUT_DIR = Path("archive/csv/med_biomes")
 FIGURE_DIR = Path("figures/med_biomes")
 
@@ -73,22 +77,23 @@ def calculate_gridarea(latitudes, resolution, number_of_longitudes):
     return np.swapaxes(np.tile(areas, (number_of_longitudes, 1)), 0, 1)
 
 
-def download_grid_spei(years, months, west, east, south, north, spei_file):
-    """Download the full gridded SPEI-3 series from the consolidated CDS dataset."""
-    if spei_file.exists():
-        return
+def download_grid_spei(dates, west, east, south, north, dataset_type, destination):
+    """Download one CDS SPEI product period and combine all returned NetCDF files."""
+    #if destination.exists() or not dates:
+    #    return destination
 
-    zip_path = spei_file.with_suffix(".zip")
+    zip_path = destination.with_suffix(".zip")
     request = {
         "variable": ["standardised_precipitation_evapotranspiration_index"],
         "accumulation_period": [str(WINDOW)],
         "version": ["1_0"],
         "product_type": ["reanalysis"],
-        "dataset_type": ["consolidated_dataset"],
-        "year": years,
-        "month": months,
+        "dataset_type": [dataset_type],
+        "year": sorted({f"{date.year:04d}" for date in dates}),
+        "month": sorted({f"{date.month:02d}" for date in dates}),
         "area": [north, west, south, east],
     }
+    print(f"Downloading {dataset_type}: {dates[0]:%Y-%m} to {dates[-1]:%Y-%m}")
     client = cdsapi.Client()
     client.retrieve("derived-drought-historical-monthly", request).download(str(zip_path))
     with zipfile.ZipFile(zip_path) as archive:
@@ -97,23 +102,24 @@ def download_grid_spei(years, months, west, east, south, north, spei_file):
             raise ValueError(f"No NetCDF files found in {zip_path}")
         extracted_files = []
         for netcdf_name in netcdf_names:
-            extracted_file = GRID_DATA_DIR / Path(netcdf_name).name
+            extracted_file = destination.parent / f"{destination.stem}_{len(extracted_files)}.nc"
             with archive.open(netcdf_name) as source, open(extracted_file, "wb") as target:
                 target.write(source.read())
             extracted_files.append(extracted_file)
     extracted_datasets = [xr.open_dataset(extracted_file) for extracted_file in extracted_files]
     combined_dataset = xr.combine_by_coords(extracted_datasets, combine_attrs="override")
-    combined_dataset.to_netcdf(spei_file)
+    combined_dataset.to_netcdf(destination)
     combined_dataset.close()
     for extracted_dataset in extracted_datasets:
         extracted_dataset.close()
     for extracted_file in extracted_files:
         extracted_file.unlink()
     zip_path.unlink()
+    return destination
 
 
 def plot_timeseries(output, biome_name, biome_label):
-    has_spei = "spei3_region_average" in output
+    has_spei = f"spei{WINDOW}_region_average" in output
     has_area = "area_any_drought_pct" in output
     number_of_panels = int(has_spei) + int(has_area)
     figure, axes = plt.subplots(number_of_panels, 1, figsize=(12, 3.5 * number_of_panels), sharex=True)
@@ -123,13 +129,13 @@ def plot_timeseries(output, biome_name, biome_label):
     panel_number = 0
     if has_spei:
         axis = axes[panel_number]
-        axis.plot(output.index, output["spei3_region_average"], color="black", linewidth=1)
+        axis.plot(output.index, output[f"spei{WINDOW}_region_average"], color="black", linewidth=1)
         axis.axhline(0, color="dimgray", linewidth=0.8)
         axis.axhline(-1, color="#b29980", linewidth=0.8, linestyle="--")
         axis.axhline(-1.5, color="#8c6640", linewidth=0.8, linestyle="--")
         axis.axhline(-2, color="#663300", linewidth=0.8, linestyle="--")
-        axis.set_ylabel("Regional SPEI-3")
-        axis.set_title(f"{biome_name} | SPEI-3")
+        axis.set_ylabel(f"Regional SPEI-{WINDOW}")
+        axis.set_title(f"{biome_name} | SPEI-{WINDOW}")
         panel_number += 1
 
     if has_area:
@@ -144,14 +150,14 @@ def plot_timeseries(output, biome_name, biome_label):
             bottom += output[column].fillna(0).to_numpy()
         axis.set_ylabel("Area in drought [%]")
         axis.set_ylim(0, 100)
-        axis.set_title(f"{biome_name} | Area in drought (SPEI-3)")
+        axis.set_title(f"{biome_name} | Area in drought (SPEI-{WINDOW})")
         axis.legend(ncol=3, loc="upper center")
 
     for axis in axes:
         axis.spines[["top", "right"]].set_visible(False)
         axis.margins(x=0)
     figure.tight_layout()
-    figure.savefig(FIGURE_DIR / f"{biome_label}_spei3_timeseries.png", dpi=300)
+    figure.savefig(FIGURE_DIR / f"{biome_label}_spei{WINDOW}_timeseries.png", dpi=300)
     plt.close(figure)
 
 
@@ -197,15 +203,20 @@ west, south, east, north = biomes.total_bounds
 if calculate_area:
     series_dates = pd.date_range(SERIES_START, SERIES_END, freq="MS")
     spei_file = GRID_DATA_DIR / f"spei{WINDOW}_{series_dates[0]:%Y%m}_{series_dates[-1]:%Y%m}_med_biomes.nc"
-    download_grid_spei(
-        [str(year) for year in sorted(series_dates.year.unique())],
-        [f"{month:02d}" for month in sorted(series_dates.month.unique())],
-        west,
-        east,
-        south,
-        north,
-        spei_file,
-    )
+    consolidated_end = series_dates[-1] - pd.DateOffset(months=CONSOLIDATED_LAG_MONTHS)
+    datasets = []
+    for dataset_type, dates, suffix in [
+        ("consolidated_dataset", series_dates[series_dates <= consolidated_end], "consolidated"),
+        ("intermediate_dataset", series_dates[series_dates > consolidated_end], "intermediate"),
+    ]:
+        destination = spei_file.with_stem(f"{spei_file.stem}_{suffix}")
+        datasets.append(download_grid_spei(dates, west, east, south, north, dataset_type, destination))
+    source_datasets = [xr.open_dataset(path) for path in datasets]
+    combined_dataset = xr.combine_by_coords(source_datasets, combine_attrs="override")
+    combined_dataset.to_netcdf(spei_file)
+    combined_dataset.close()
+    for source_dataset in source_datasets:
+        source_dataset.close()
     grid_spei_dataset = xr.open_dataset(spei_file)
     grid_variable = next(iter(grid_spei_dataset.data_vars))
     grid_spei_all = grid_spei_dataset[grid_variable].sel(time=slice(SERIES_START, SERIES_END))
@@ -249,11 +260,8 @@ for _, biome in biomes.iterrows():
         regional_pmpet = convert_mmperday_to_mmpermonth(
             regional_pmpet.to_frame(), ["pmpet"]
         )
-        reference_pmpet = regional_pmpet.loc[
-            (regional_pmpet.index.year >= REFERENCE_START)
-            & (regional_pmpet.index.year <= REFERENCE_END)
-        ]
-        output["spei3_region_average"] = calculate_si(
+        reference_pmpet = regional_pmpet.loc[PMET_START:f"{REFERENCE_END}-12-31"]
+        output[f"spei{WINDOW}_region_average"] = calculate_si(
             regional_pmpet,
             dfdata_ref=reference_pmpet,
             window=WINDOW,
@@ -302,8 +310,8 @@ for _, biome in biomes.iterrows():
     if make_plot:
         plot_timeseries(output, biome_name, biome_label)
     output.index = output.index.strftime("%Y-%m")
-    output.to_csv(OUTPUT_DIR / f"{biome_label}_spei3_timeseries.csv", float_format="%.6f")
-    print(f"Wrote {biome_name}: {OUTPUT_DIR / f'{biome_label}_spei3_timeseries.csv'}")
+    output.to_csv(OUTPUT_DIR / f"{biome_label}_spei{WINDOW}_timeseries.csv", float_format="%.6f")
+    print(f"Wrote {biome_name}: {OUTPUT_DIR / f'{biome_label}_spei{WINDOW}_timeseries.csv'}")
 
 if calculate_spei:
     pmpet_dataset.close()

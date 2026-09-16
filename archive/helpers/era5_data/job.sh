@@ -4,7 +4,7 @@
 #SBATCH --job-name=era5
 #SBATCH --ntasks=1
 #SBATCH --mem=128GB
-#SBATCH --time=03:00:00
+#SBATCH --time=12:00:00
 #SBATCH --mail-user=jessica.keune@ecmwf.int
 
 set -u # fail when using an undefined variable
@@ -20,8 +20,9 @@ set -e # abort at first error
 module load python3/3.11.8-01
 
 module load cdo
-cd /home/nejk/code/drought-on-demand/helpers/era5_data
-./update.sh
+cd /home/nejk/code/drought-on-demand/archive/helpers/era5_data
+./update_regional.sh
+#./update.sh
 
 
 
