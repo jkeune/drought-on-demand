@@ -241,7 +241,7 @@ if arguments.barren_area_masking == "True":
     barren_dataset = xr.open_dataset(BARREN_MASK_FILE)
     barren_mask = barren_dataset["barren_mask"].reindex_like(mask, method="nearest").load()
     barren_dataset.close()
-    mask = mask.where(barren_mask != 1)
+    mask = mask.where(barren_mask == 1)
 variable = variable.where(mask)
 if arguments.significance_masking == "True" or arguments.pzero_masking == "True":
     months = sorted({f"{date.month:02d}" for date in dates})
