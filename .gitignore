@@ -134,7 +134,7 @@ data/SPEI*.csv
 data/SPI*.csv
 data/era5_drought/*.zip
 data/era5_drought/*.nc
-data/med_biome/*
+data/med_biome*
 master_token2
 sitesctl
 
