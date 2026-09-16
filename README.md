@@ -48,13 +48,7 @@ pixi run python timeseries_area_in_drought.py SPEI 12 C3S_Central_Europe
 
 Sample figures: [figures/SPEI6_198001_202608_C3S_Europe_area_in_drought.png](figures/SPEI6_198001_202608_C3S_Central_Europe_area_in_drought.png) and [figures/SPEI12_198001_202608_C3S_Central_Europe_area_in_drought.png](figures/SPEI12_198001_202608_C3S_Central_Europe_area_in_drought.png).
 
-## Additional scripts under construction
-### timeseries_region.py
-A script to (calculate and) plot drought indices averaged over individual regions is under construction, but requires the download of ERA5 data and the re-calculation of drought indices over the region. 
-### drought_stripes.py
-A script to (calculate and) plot drought stripes is under construction (examples see `archive/drought_stripes` for examples for individual regions), but requires the download of ERA5 data and the re-calculation of drought indices over the region. 
-
-
+### More scripts under construction!
 
 
 ## Other settings and notes
