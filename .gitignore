@@ -128,8 +128,16 @@ SouthernCalifornia_*.pdf
 archive/helpers/era5_data/data_retrieval/*
 archive/helpers/era5_data/data_retrieval_regional/*
 archive/helpers/era5_data/data_retrieval_regional_updated/*
-data/SPEI_*.nc
-data/SPI_*.nc
+data/SPEI*.nc
+data/SPI*.nc
+data/SPEI*.csv
+data/SPI*.csv
+data/era5_drought/*.zip
+data/era5_drought/*.nc
+data/med_biome/*
+master_token2
+sitesctl
+
 
 # pixi environments
 .pixi/*
