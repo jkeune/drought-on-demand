@@ -122,6 +122,7 @@ print(f"Running map_drought.py with arguments: INDEX={index}, ACCUMULATION={accu
 regions_to_check = region
 continent_mapping = get_continent_country_mapping()
 custom_regions = {
+    "global": [-180, 180, -90, 90],
     "C3S_Europe": [-25, 40, 34, 72],  # west, east, south, north
     "C3S_Southwestern_Europe": [-25, 15, 34, 45],
     "C3S_Northwestern_Europe": [-25, 15, 45, 72],
@@ -323,6 +324,8 @@ def plot_drought_snapshot(data, index, accumulation, year, month, region_label, 
     colors = ["#bebebe", "#663300", "#8c6640", "#b29980", "#ffffff", "#99b280", "#668c40", "#336600"]
     labels = ["masked", "extremely dry", "severely dry", "moderately dry", "near normal", "moderately wet", "severely wet", "extremely wet"]
     snapshot = data.squeeze(drop=True).where(data.squeeze(drop=True) != -9999)
+    if snapshot.lon.size > 1 and snapshot.lon[-1] == snapshot.lon[0]:
+        snapshot = snapshot.isel(lon=slice(None, -1))
     if mask_geometry is not None:
         shapefile_mask = regionmask.Regions([mask_geometry]).mask(snapshot.lon, snapshot.lat).notnull()
         snapshot = snapshot.where(shapefile_mask)

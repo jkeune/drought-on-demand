@@ -23,12 +23,12 @@ The script download data from the CDS for REGION, saves it to `data` and plots i
 
 Examples:
 ```
-pixi run python map_drought.py SPEI 12 global
-pixi run python map_drought.py SPEI 12 Europe
-pixi run python map_drought.py SPI 36 Spain
+pixi run python map_drought.py SPEI 12 2026 8 global
+pixi run python map_drought.py SPEI 6 2026 7 C3S_Europe
+pixi run python map_drought.py SPI 6 2026 7 C3S_Europe
 ```
 
-Sample outputs can be found in 'figures', for example, [figures/SPEI6_202607_C3S_Europe.png](figures/SPEI6_202607_C3S_Europe.png) and [figures/SPI6_202607_C3S_Europe.png](figures/SPI6_202607_C3S_Europe.png).
+Sample outputs can be found in 'figures', for example, [figures/SPEI12_202608_global.png](figures/SPEI12_202608_global.png), [figures/SPEI6_202607_C3S_Europe.png](figures/SPEI6_202607_C3S_Europe.png) and [figures/SPI6_202607_C3S_Europe.png](figures/SPI6_202607_C3S_Europe.png).
 
 
 ### timeseries_area_in_drought.py
