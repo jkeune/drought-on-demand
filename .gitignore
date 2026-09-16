@@ -115,6 +115,21 @@ archive/csv/*.csv
 archive/csv/**/*.csv
 archive/drought_stripes/figures/*.png
 archive/helpers/era5_data/*/*.nc
+archive/helpers/era5_data/retrieve_era5*_potevaporation_2*
+archive/helpers/era5_data/retrieve_era5*_potevaporation_1*
+archive/helpers/era5_data/retrieve_era5*_precipitation_1*
+archive/helpers/era5_data/retrieve_era5*_precipitation_2*
+archive/drought_stripes/data/retrieve_era5*_potevaporation_2*
+archive/drought_stripes/data/retrieve_era5*_potevaporation_1*
+archive/drought_stripes/data/retrieve_era5*_precipitation_1*
+archive/drought_stripes/data/retrieve_era5*_precipitation_2*
+California_*.pdf
+SouthernCalifornia_*.pdf
+archive/helpers/era5_data/data_retrieval/*
+archive/helpers/era5_data/data_retrieval_regional/*
+archive/helpers/era5_data/data_retrieval_regional_updated/*
+data/SPEI_*.nc
+data/SPI_*.nc
 
 # pixi environments
 .pixi/*
