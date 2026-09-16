@@ -28,7 +28,7 @@ pixi run python map_drought.py SPEI 12 Europe
 pixi run python map_drought.py SPI 36 Spain
 ```
 
-Sample outputs can be found in figures/maps_drought.
+Sample outputs can be found in 'figures', for example, [figures/SPEI6_202607_C3S_Europe.png](figures/SPEI6_202607_C3S_Europe.png) and [figures/SPI6_202607_C3S_Europe.png](figures/SPI6_202607_C3S_Europe.png).
 
 
 ### timeseries_area_in_drought.py
@@ -45,8 +45,9 @@ pixi run python timeseries_area_in_drought.py SPEI 3 --shapefile regions/med_v2/
 
 In all cases, the script prefers consolidated data and adds intermediate data only for the final three (hardcoded) months when needed. Outputs are written to `data` and `figures`; thresholds and colors are optional settings at the top of the script.
 
+Sample figures: [figures/SPEI6_198001_202608_C3S_Central_Europe_area_in_drought.png](figures/SPEI6_198001_202608_C3S_Central_Europe_area_in_drought.png) and [figures/SPEI12_198001_202608_C3S_Central_Europe_area_in_drought.png](figures/SPEI12_198001_202608_C3S_Central_Europe_area_in_drought.png).
 
-## Under construction
+## Additional scripts under construction
 ### timeseries_region.py
 A script to (calculate and) plot drought indices averaged over individual regions is under construction, but requires the download of ERA5 data and the re-calculation of drought indices over the region. 
 ### drought_stripes.py
