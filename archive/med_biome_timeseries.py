@@ -37,7 +37,7 @@ PMET_START = (
 ).strftime("%Y-%m-%d")
 SHAPEFILE = Path("regions/med_v2/three_agb_biomes.shp")
 BIOME_IDS = [1, 2, 3]
-pmet_file = Path("archive/helpers/era5_data/data_retrieval_regional/wb_all_regional.nc")
+pmet_file = Path("archive/helpers/era5_data/data_retrieval_regional_updated/wb_all_regional.nc")
 PMPET_VARIABLE = "wb"
 GRID_DATA_DIR = Path(f"data/med_biome_spei{WINDOW}")
 OUTPUT_DIR = Path("archive/csv/med_biomes")
