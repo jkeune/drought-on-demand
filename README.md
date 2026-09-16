@@ -40,7 +40,13 @@ where `REGION` can be a Natural Earth country, continent, or C3S region such as 
 
 In all cases, the script prefers consolidated data and adds intermediate data only for the final three (hardcoded) months when needed. Outputs are written to `data` and `figures`; thresholds and colors are optional settings at the top of the script.
 
-Sample figures: [figures/SPEI6_198001_202608_C3S_Central_Europe_area_in_drought.png](figures/SPEI6_198001_202608_C3S_Central_Europe_area_in_drought.png) and [figures/SPEI12_198001_202608_C3S_Central_Europe_area_in_drought.png](figures/SPEI12_198001_202608_C3S_Central_Europe_area_in_drought.png).
+Examples:
+```
+pixi run python timeseries_area_in_drought.py SPEI 6 C3S_Central_Europe
+pixi run python timeseries_area_in_drought.py SPEI 12 C3S_Central_Europe
+```
+
+Sample figures: [figures/SPEI6_198001_202608_C3S_Europe_area_in_drought.png](figures/SPEI6_198001_202608_C3S_Central_Europe_area_in_drought.png) and [figures/SPEI12_198001_202608_C3S_Central_Europe_area_in_drought.png](figures/SPEI12_198001_202608_C3S_Central_Europe_area_in_drought.png).
 
 ## Additional scripts under construction
 ### timeseries_region.py

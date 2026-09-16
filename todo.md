@@ -1,0 +1,3 @@
+- add output/data path variable to download and store outputs elsewhere
+- check if the global option works for timeseries, e.g. `pixi run python timeseries_area_in_drought.py SPEI 12 global` 
+- check if the global option for timeseries uses land only (and masking barren and/or significance is accounted for correctely)
