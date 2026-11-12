@@ -1,0 +1,15 @@
+retrieve,
+class	= ea,
+dataset	= era5,
+date	= __DATES__,
+expver  = 1,
+levtype	= sfc,
+param	= 228.128,
+stream	= moda,
+type	= fc,
+grid    = 0.25/0.25,
+area    = __NORTH_WEST_SOUTH_EAST__,
+fieldset= tmp
+compute,
+ formula="max(0.,tmp*1000)",
+ target	= "__OFILE__"
