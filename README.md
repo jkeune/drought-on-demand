@@ -38,7 +38,7 @@ pixi run python timeseries_area_in_drought.py INDEX ACCUMULATION_WINDOW REGION
 ```
 where `REGION` can be a Natural Earth country, continent, or C3S region such as `C3S_Central_Europe`. The default period is 1980-01 through the previous month; set `--start YYYY-MM` and `--end YYYY-MM` to change it.
 
-In all cases, the script prefers consolidated data and adds intermediate data only for the final three (hardcoded) months when needed. Outputs are written to `data` and `figures`; thresholds and colors are optional settings at the top of the script.
+In all cases, the script prefers consolidated data and adds intermediate data only for the final three (hardcoded) months when needed. If the CDS returns an overlapping month in both products, the consolidated ERA5 value takes precedence over the intermediate ERA5T value. Outputs are written to `data` and `figures`; thresholds and colors are optional settings at the top of the script.
 
 Examples:
 ```
@@ -48,7 +48,25 @@ pixi run python timeseries_area_in_drought.py SPEI 12 C3S_Central_Europe
 
 Sample figures: [figures/SPEI6_198001_202608_C3S_Europe_area_in_drought.png](figures/SPEI6_198001_202608_C3S_Central_Europe_area_in_drought.png) and [figures/SPEI12_198001_202608_C3S_Central_Europe_area_in_drought.png](figures/SPEI12_198001_202608_C3S_Central_Europe_area_in_drought.png).
 
-### More scripts under construction!
+### drought_stripes.py
+To create monthly drought stripes for a selected region, run
+```
+pixi run python drought_stripes.py INDEX ACCUMULATION_WINDOW REGION
+```
+where `INDEX` is `SPI` or `SPEI`, `ACCUMULATION_WINDOW` is the number of months, and `REGION` accepts the same countries, continents, C3S regions, and shapefile options as `timeseries_area_in_drought.py`.
+
+The script downloads monthly ERA5 precipitation and, for SPEI, potential evaporation (monthly averages). It first calculates an area-weighted regional precipitation or water-balance series and then fits the drought index separately for each calendar month. The default reference period is 1991–2020, and the default stripe period is 1940-01 through the previous month. Use `--start`, `--end`, `--reference-start`, and `--reference-end` to change these periods. The regional values and calculated index are written to `data`, while PNG and PDF stripes are written to `figures`.
+
+By default, each stripe represents one monthly index value. Use `--plot_timesteps annual` to plot one stripe per year and `--plot_month` to select that year's calendar month (default: December):
+```
+pixi run python drought_stripes.py SPEI 12 Slovakia --plot_timesteps monthly
+pixi run python drought_stripes.py SPEI 12 Slovakia --plot_timesteps annual --plot_month 12
+```
+
+For example, to create SPEI-12 stripes for Slovakia:
+```
+pixi run python drought_stripes.py SPEI 12 Slovakia
+```
 
 
 ## Other settings and notes
@@ -61,7 +79,7 @@ pixi run python map_drought.py SPEI 3 2026 7 --shapefile regions/med_v2/three_ag
 pixi run python timeseries_area_in_drought.py SPEI 3 --shapefile regions/med_v2/three_agb_biomes.shp --id biome_id=1
 ```
 #### Land
-ERA5-Drought is only defined over land and masked accordingly. ERA5 data as used in timeseries_region.py and drought_stripes.py is masked using the ERA5 land mask.
+ERA5-Drought is only defined over land and masked accordingly. ERA5 data used by `drought_stripes.py` is masked using the ERA5 land-sea mask included in its download.
 #### Barren areas
 `map_drought.py` and `timeseries_area_in_drought.py` exclude barren land by default, using `masks/ERA5_barren_w_precip.nc`. Set `--barren_area_masking False` to retain it; time-series percentages then include barren pixels.
 #### Significance masking
