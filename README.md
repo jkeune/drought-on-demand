@@ -68,6 +68,8 @@ For example, to create SPEI-12 stripes for Slovakia:
 pixi run python drought_stripes.py SPEI 12 Slovakia
 ```
 
+Sample figure: [figures/SPEI12_198001_202512_Slovakia_drought_stripes_annual_month12.png](figures/SPEI12_198001_202512_Slovakia_drought_stripes_annual_month12.png)
+
 
 ## Other settings and notes
 
