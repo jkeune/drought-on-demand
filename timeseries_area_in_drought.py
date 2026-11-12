@@ -68,6 +68,7 @@ def get_region(region_name, shapefile, feature_id):
 
     countries = regionmask.defined_regions.natural_earth_v5_1_2.countries_110
     custom_regions = {
+        "global": [-180, 180, -90, 90],
         "C3S_Europe": [-25, 40, 34, 72],
         "C3S_Southwestern_Europe": [-25, 15, 34, 45],
         "C3S_Northwestern_Europe": [-25, 15, 45, 72],
@@ -129,6 +130,23 @@ def download_dataset(index, accumulation, dates, geometry, dataset_type, destina
         extracted_path.unlink()
     zip_path.unlink()
     return destination
+
+
+def combine_downloaded_datasets(datasets):
+    """Combine downloaded time series, preferring consolidated data at overlaps."""
+    combined = xr.concat(
+        datasets,
+        dim="time",
+        data_vars="minimal",
+        coords="minimal",
+        compat="override",
+        combine_attrs="override",
+    )
+    duplicates = combined.get_index("time").duplicated(keep="first")
+    if duplicates.any():
+        print(f"Discarding {duplicates.sum()} duplicate time step(s) from intermediate downloads.")
+        combined = combined.isel(time=~duplicates)
+    return combined.sortby("time")
 
 
 def download_static_masks(index, accumulation, months, geometry, destination, significance_masking, pzero_masking):
@@ -226,12 +244,15 @@ for dataset_type, requested_dates, suffix in [
 
 # read ERA5-Drought data in download folder
 datasets = [xr.open_dataset(path) for path in files]
-data = xr.combine_by_coords(datasets, combine_attrs="override")
+data = combine_downloaded_datasets(datasets)
 
 # minor modifications (coordinate names etc)
 variable = data[next(iter(data.data_vars))]
 coordinate_names = {name: replacement for name, replacement in {"latitude": "lat", "longitude": "lon"}.items() if name in variable.coords}
-variable = variable.rename(coordinate_names).sel(time=slice(start, end)).where(variable != -9999)
+end_of_month = end + pd.offsets.MonthEnd()
+variable = variable.rename(coordinate_names).sel(time=slice(start, end_of_month)).where(variable != -9999)
+if variable.lon.size > 1 and variable.lon[-1] == variable.lon[0]:
+    variable = variable.isel(lon=slice(None, -1))
 
 # mask to region of interest
 mask = regionmask.Regions([geometry]).mask(variable.lon, variable.lat).notnull()
@@ -292,7 +313,7 @@ axis.xaxis.set_major_formatter(DateFormatter("%Y"))
 axis.yaxis.grid(color="lightgray", linewidth=0.6)
 axis.set_axisbelow(True)
 axis.spines[["top", "right"]].set_visible(False)
-axis.legend(ncol=3, loc="upper center")
+#axis.legend(ncol=3, loc="upper center")
 axis.margins(x=0)
 figure.tight_layout()
 figure_path = OUTPUT_DIR / f"{prefix}_area_in_drought.png"
